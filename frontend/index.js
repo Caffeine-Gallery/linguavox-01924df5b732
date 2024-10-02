@@ -8,6 +8,11 @@ const translationHistory = document.getElementById('translationHistory');
 
 let currentTranslation = '';
 
+// Initialize Google Translate API
+function googleTranslateElementInit() {
+    new google.translate.TranslateElement({pageLanguage: 'en'}, 'google_translate_element');
+}
+
 async function translateText() {
     const text = inputText.value;
     const targetLang = languageSelect.value;
@@ -18,18 +23,18 @@ async function translateText() {
     }
 
     try {
-        const response = await fetch('https://libretranslate.de/translate', {
-            method: 'POST',
-            body: JSON.stringify({
-                q: text,
-                source: 'en',
-                target: targetLang
-            }),
-            headers: { 'Content-Type': 'application/json' }
+        // Use Google Translate API
+        const translation = await new Promise((resolve, reject) => {
+            google.language.translate(text, 'en', targetLang, (result) => {
+                if (result.error) {
+                    reject(result.error);
+                } else {
+                    resolve(result.translation);
+                }
+            });
         });
 
-        const data = await response.json();
-        currentTranslation = data.translatedText;
+        currentTranslation = translation;
         translationOutput.textContent = currentTranslation;
 
         // Store translation in the backend
@@ -65,3 +70,6 @@ speakButton.addEventListener('click', speakTranslation);
 
 // Initial update of translation history
 updateTranslationHistory();
+
+// Make sure to call googleTranslateElementInit after the page loads
+window.googleTranslateElementInit = googleTranslateElementInit;
