@@ -8,11 +8,6 @@ const translationHistory = document.getElementById('translationHistory');
 
 let currentTranslation = '';
 
-// Initialize Google Translate API
-function googleTranslateElementInit() {
-    new google.translate.TranslateElement({pageLanguage: 'en'}, 'google_translate_element');
-}
-
 async function translateText() {
     const text = inputText.value;
     const targetLang = languageSelect.value;
@@ -23,23 +18,19 @@ async function translateText() {
     }
 
     try {
-        // Use Google Translate API
-        const translation = await new Promise((resolve, reject) => {
-            google.language.translate(text, 'en', targetLang, (result) => {
-                if (result.error) {
-                    reject(result.error);
-                } else {
-                    resolve(result.translation);
-                }
-            });
-        });
+        const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`);
+        const data = await response.json();
 
-        currentTranslation = translation;
-        translationOutput.textContent = currentTranslation;
+        if (data.responseStatus === 200) {
+            currentTranslation = data.responseData.translatedText;
+            translationOutput.textContent = currentTranslation;
 
-        // Store translation in the backend
-        await backend.addTranslation(text, currentTranslation, targetLang);
-        updateTranslationHistory();
+            // Store translation in the backend
+            await backend.addTranslation(text, currentTranslation, targetLang);
+            updateTranslationHistory();
+        } else {
+            throw new Error(data.responseDetails);
+        }
     } catch (error) {
         console.error('Translation error:', error);
         translationOutput.textContent = 'Translation error. Please try again.';
@@ -70,6 +61,3 @@ speakButton.addEventListener('click', speakTranslation);
 
 // Initial update of translation history
 updateTranslationHistory();
-
-// Make sure to call googleTranslateElementInit after the page loads
-window.googleTranslateElementInit = googleTranslateElementInit;
